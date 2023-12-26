@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Country {
+  iso2        String   @id
+  countryName String
+  Server      Server[]
+}
+
+model Server {
+  id          Int     @id @default(autoincrement())
+  ip          String  @unique
+  name        String
+  countryIso2 String  @map("country")
+  workload    Float
+  Country     Country @relation(fields: [countryIso2], references: [iso2])
+}
+
+model Plan {
+  id            Int            @id @default(autoincrement())
+  name          String
+  price         Float
+  duration      Int // Duration in days
+  sale          Float? // Sale percentage for plans longer than a month
+  usageLimit    Float // Maximum monthly usage limit
+  Subscriptions Subscription[]
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  telegramId       String         @unique
+  telegramUsername String
+  isFreePlanUsed   Boolean        @default(false)
+  Subscriptions    Subscription[]
+  MonthlyUsage     MonthlyUsage[]
+  Transaction      Transaction[]
+  TonProof         TonProof[]
+  TonWallet        TonWallet[]
+}
+
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  planId    Int
+  startDate DateTime
+  endDate   DateTime
+  User      User     @relation(fields: [userId], references: [id])
+  Plan      Plan     @relation(fields: [planId], references: [id])
+}
+
+model MonthlyUsage {
+  id        Int   @id @default(autoincrement())
+  userId    Int
+  year      Int // Year of the usage
+  month     Int // Month of the usage
+  limit     Float // Usage limit for the month
+  usedLimit Float // Actual usage in the month
+  User      User  @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Float
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
+}
+
+model TonProof {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  createdAt DateTime @default(now())
+  proof     String // uuid
+
+  User User @relation(fields: [userId], references: [id])
+}
+
+model TonWallet {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  createdAt       DateTime @default(now())
+  address         String
+  publicKey       String
+  chain           String
+  walletStateInit String
+  User            User     @relation(fields: [userId], references: [id])
+}
